@@ -5,20 +5,18 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 let camera, scene, renderer;
 let cylinderMesh, octahedronMesh, torusMesh;
 let controls;
-let particles; // Special Effect
+let particles;
 let hue = 0;
 
-// Стани анімацій
 let rotationEnabled = true;
 let pulseMoveEnabled = true;
 let colorEmitEnabled = true;
 let speedMode = "normal";
 let texturesEnabled = true;
-let rotationDirection = 1; // 1: Вперед; -1: Назад
+let rotationDirection = 1;
 let specialEffectActive = false;
 let specialEffectTimer = 0;
 
-// Матеріали з текстурами та без текстур
 let emissiveMaterial, emissiveMaterialNoTexture;
 let pinkMaterial, pinkMaterialNoTexture;
 let greenMaterial, greenMaterialNoTexture;
@@ -30,21 +28,17 @@ function init() {
     const container = document.createElement("div");
     document.body.appendChild(container);
 
-    // Сцена
     scene = new THREE.Scene();
 
-    // Камера
     camera = new THREE.PerspectiveCamera(120, window.innerWidth / window.innerHeight, 0.01, 40);
 
-    // Рендеринг
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    renderer.xr.enabled = true; // Життєво важливий рядок коду для вашого застосунку!
+    renderer.xr.enabled = true;
     container.appendChild(renderer.domElement);
 
-    // Світло
     const directionalLight = new THREE.DirectionalLight(0xffffff, 4);
     directionalLight.position.set(3, 3, 3);
     scene.add(directionalLight);
@@ -56,9 +50,7 @@ function init() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    // 1. Створюємо об'єкт Torus Knot
     const torusGeometry = new THREE.TorusKnotGeometry(0.4, 0.15, 100, 16);
-    // Матеріал
     emissiveMaterial = new THREE.MeshStandardMaterial({
         color: 0x1e90ff,
         emissive: 0xff4500,
@@ -73,13 +65,10 @@ function init() {
         metalness: 0.5,
         roughness: 0.2,
     });
-    // Створюємо наступний меш
     torusMesh = new THREE.Mesh(torusGeometry, emissiveMaterial);
     scene.add(torusMesh);
 
-    // 2. Створюємо об'єкт циліндра
     const cylinderGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.5, 32);
-    // Матеріал для першого об'єкту 
     pinkMaterial = new THREE.MeshPhysicalMaterial({
         color: 0xff69b4,
         emissive: 0xff4500,
@@ -100,14 +89,11 @@ function init() {
         reflectivity: 1.0,
         transmission: 0.8,
     });
-    // Створюємо меш
     cylinderMesh = new THREE.Mesh(cylinderGeometry, pinkMaterial);
     cylinderMesh.position.x = -1.5;
     scene.add(cylinderMesh);
 
-    // 3. Створюємо об'єкт Octahedron
     const octahedronGeometry = new THREE.OctahedronGeometry(0.6, 0);
-    // Матеріал для третього
     greenMaterial = new THREE.MeshStandardMaterial({
         color: 0x32cd32,
         emissive: 0xff4500,
@@ -120,22 +106,17 @@ function init() {
         metalness: 1,
         roughness: 0.3,
     });
-    // Створюємо наступний меш
     octahedronMesh = new THREE.Mesh(octahedronGeometry, greenMaterial);
     octahedronMesh.position.x = 1.5;
     scene.add(octahedronMesh);
 
-    // Special Effect
     createParticles();
 
-    // Позиція камери
     camera.position.z = 3;
 
-    // Контролери для 360 огляду на вебсторінці
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // Налаштування AR-режиму
     const button = ARButton.createButton(renderer, {
         onSessionStarted: () => {
             renderer.domElement.style.background = "transparent";
@@ -148,7 +129,6 @@ function init() {
     document.body.appendChild(button);
     renderer.domElement.style.display = "block";
 
-    // Додаємо Listener для кнопок
     document
         .getElementById("toggleRotationBtn")
         .addEventListener("click", toggleRotation);
@@ -174,7 +154,6 @@ function init() {
     window.addEventListener("resize", onWindowResize, false);
 }
 
-// Special Effect
 function createParticles() {
     const particleGeometry = new THREE.BufferGeometry();
     const particleCount = 300;
@@ -286,7 +265,6 @@ function animateObjects(timestamp) {
     const speed = speedMode === "normal" ? 1 : 2;
     const specialSpeed = specialEffectActive ? 3 : 1;
 
-    // Анімація
     if (rotationEnabled) {
         cylinderMesh.rotation.z -=
             0.01 * speed * rotationDirection * specialSpeed;
@@ -300,7 +278,6 @@ function animateObjects(timestamp) {
             0.5 + 0.2 * Math.sin(timestamp * 0.003 * speed * specialSpeed);
     }
 
-    // Анімація
     if (rotationEnabled) {
         torusMesh.rotation.x -= 0.01 * speed * rotationDirection * specialSpeed;
     }
@@ -314,7 +291,6 @@ function animateObjects(timestamp) {
         torusMesh.material.color.setHSL(hue, 1, 0.5);
     }
 
-    // Анімація
     if (rotationEnabled) {
         octahedronMesh.rotation.x -=
             0.01 * speed * rotationDirection * specialSpeed;
@@ -331,7 +307,6 @@ function animateObjects(timestamp) {
             1.5 + Math.sin(timestamp * 0.003 * speed * specialSpeed);
     }
 
-    // Анімація частинок
     if (specialEffectActive) {
         specialEffectTimer += 0.1 * speed * specialSpeed;
         particles.material.opacity = Math.max(0, 1 - specialEffectTimer / 5);
