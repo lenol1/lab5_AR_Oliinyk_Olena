@@ -15,8 +15,6 @@ let speedMode = "normal";
 let texturesEnabled = true;
 let rotationDirection = 1;
 let specialEffectActive = false;
-let specialEffectTimer = 0;
-
 let emissiveMaterial, emissiveMaterialNoTexture;
 let pinkMaterial, pinkMaterialNoTexture;
 let greenMaterial, greenMaterialNoTexture;
@@ -61,12 +59,10 @@ function init() {
     emissiveMaterialNoTexture = new THREE.MeshStandardMaterial({
         color: 0x00ff00,
         transparent: true,
-        emissiveIntensity: 3,
         metalness: 0.5,
         roughness: 0.2,
     });
     torusMesh = new THREE.Mesh(torusGeometry, emissiveMaterial);
-    scene.add(torusMesh);
 
     const cylinderGeometry = new THREE.CylinderGeometry(0.4, 0.4, 1.5, 32);
     pinkMaterial = new THREE.MeshPhysicalMaterial({
@@ -90,8 +86,6 @@ function init() {
         transmission: 0.8,
     });
     cylinderMesh = new THREE.Mesh(cylinderGeometry, pinkMaterial);
-    cylinderMesh.position.x = -1.5;
-    scene.add(cylinderMesh);
 
     const octahedronGeometry = new THREE.OctahedronGeometry(0.6, 0);
     greenMaterial = new THREE.MeshStandardMaterial({
@@ -107,22 +101,29 @@ function init() {
         roughness: 0.3,
     });
     octahedronMesh = new THREE.Mesh(octahedronGeometry, greenMaterial);
-    octahedronMesh.position.x = 1.5;
-    scene.add(octahedronMesh);
 
+    torusMesh.position.set(-2, 0, -6);
+    cylinderMesh.position.set(0, 0, -6);
+    octahedronMesh.position.set(2, 0, -6);
+
+    scene.add(torusMesh);
+    scene.add(cylinderMesh);
+    scene.add(octahedronMesh);
     createParticles();
 
-    camera.position.z = 3;
+    camera.position.z = 2;
 
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
     const button = ARButton.createButton(renderer, {
         onSessionStarted: () => {
+            isInAR = true;
             renderer.domElement.style.background = "transparent";
             document.getElementById("controls").style.display = "flex";
         },
         onSessionEnded: () => {
+            isInAR = false;
             document.getElementById("controls").style.display = "flex";
         },
     });
@@ -147,9 +148,15 @@ function init() {
     document
         .getElementById("toggleDirectionBtn")
         .addEventListener("click", toggleDirection);
-    document
-        .getElementById("specialEffectBtn")
-        .addEventListener("click", triggerSpecialEffect);
+    document.getElementById("specialEffectToggle").addEventListener("change", (e) => {
+        specialEffectActive = e.target.checked;
+
+        if (specialEffectActive) {
+            initSpecialEffect();
+        } else {
+            removeSpecialEffect();
+        }
+    });
 
     window.addEventListener("resize", onWindowResize, false);
 }
@@ -239,10 +246,59 @@ function toggleDirection() {
         rotationDirection === 1 ? "Direction: Forward" : "Direction: Backward";
 }
 
-function triggerSpecialEffect() {
-    specialEffectActive = true;
-    specialEffectTimer = 0;
-    particles.material.opacity = 1;
+let sparkleParticles;
+let sparkleParticlesMap = new Map();
+
+function initSpecialEffect() {
+    const targets = [torusMesh, cylinderMesh, octahedronMesh];
+
+    for (const target of targets) {
+        if (sparkleParticlesMap.has(target)) continue;
+
+        const particleCount = 100;
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+
+        for (let i = 0; i < particleCount; i++) {
+            const radius = 0.3 + Math.random() * 0.2;
+            const angle = Math.random() * 2 * Math.PI;
+            const y = (Math.random() - 0.5) * 0.4;
+
+            const x = radius * Math.cos(angle);
+            const z = radius * Math.sin(angle);
+
+            positions[i * 3] = x;
+            positions[i * 3 + 1] = y;
+            positions[i * 3 + 2] = z;
+
+            colors[i * 3] = Math.random();
+            colors[i * 3 + 1] = Math.random();
+            colors[i * 3 + 2] = Math.random();
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.03,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.5,
+        });
+
+        const sparkle = new THREE.Points(geometry, material);
+        sparkle.renderOrder = 1;
+        target.add(sparkle);
+        sparkleParticlesMap.set(target, sparkle);
+    }
+}
+
+function removeSpecialEffect() {
+    for (const [target, sparkle] of sparkleParticlesMap.entries()) {
+        target.remove(sparkle);
+    }
+    sparkleParticlesMap.clear();
 }
 
 function onWindowResize() {
@@ -261,9 +317,11 @@ function render(timestamp) {
     renderer.render(scene, camera);
 }
 
+let sparkleBasePositions;
+
 function animateObjects(timestamp) {
     const speed = speedMode === "normal" ? 1 : 2;
-    const specialSpeed = specialEffectActive ? 3 : 1;
+    const specialSpeed = specialEffectActive ? 1 : 1;
 
     if (rotationEnabled) {
         cylinderMesh.rotation.z -=
@@ -307,12 +365,4 @@ function animateObjects(timestamp) {
             1.5 + Math.sin(timestamp * 0.003 * speed * specialSpeed);
     }
 
-    if (specialEffectActive) {
-        specialEffectTimer += 0.1 * speed * specialSpeed;
-        particles.material.opacity = Math.max(0, 1 - specialEffectTimer / 5);
-        if (specialEffectTimer >= 5) {
-            specialEffectActive = false;
-            particles.material.opacity = 0;
-        }
-    }
 }

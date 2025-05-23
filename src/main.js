@@ -55,7 +55,7 @@ function loadUI(task) {
       <button id="toggleSpeedBtn">Speed: Normal</button>
       <button id="toggleTexturesBtn">Disable Textures</button>
       <button id="toggleDirectionBtn">Direction: Forward</button>
-      <button id="specialEffectBtn">Special Effect</button>
+      <label><input type="checkbox" id="specialEffectToggle"> Special Effect</label>
     `;
   } else if (task === 'task2') {
     controls.innerHTML = `

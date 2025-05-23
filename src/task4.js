@@ -40,6 +40,11 @@ function init() {
     light.position.set(0.5, 1, 0.25);
     scene.add(light);
 
+    directionalLight = new THREE.DirectionalLight(lightColor, lightIntensity);
+    directionalLight.position.set(5, 5, 5);
+    directionalLight.visible = lightEnabled;
+    scene.add(directionalLight);
+
     controller = renderer.xr.getController(0);
     controller.addEventListener('select', onSelect);
     scene.add(controller);
@@ -57,11 +62,6 @@ function init() {
         selectedMaterial = e.target.value;
     });
 
-    document.getElementById("dirLightToggle").addEventListener("change", (e) => {
-        lightEnabled = e.target.checked;
-        if (directionalLight) directionalLight.visible = lightEnabled;
-    });
-
     document.getElementById("lightColorControl").addEventListener("input", (e) => {
         lightColor = e.target.value;
         if (directionalLight) directionalLight.color.set(lightColor);
@@ -70,6 +70,11 @@ function init() {
     document.getElementById("lightIntensityControl").addEventListener("input", (e) => {
         lightIntensity = parseFloat(e.target.value);
         if (directionalLight) directionalLight.intensity = lightIntensity;
+    });
+
+    document.getElementById("dirLightToggle").addEventListener("change", (e) => {
+        lightEnabled = e.target.checked;
+        if (directionalLight) directionalLight.visible = lightEnabled;
     });
 
     document.getElementById("jumpToggle").addEventListener("change", (e) => {
@@ -95,33 +100,48 @@ function addReticleToScene() {
 
 function applyMaterial(model, type) {
     model.traverse((child) => {
-        if (child.isMesh && child.material) {
+        if (child.isMesh) {
+            let newMaterial;
+
             switch (type) {
                 case 'gold':
-                    child.material.color.set(0xffd700);
-                    child.material.metalness = 1;
-                    child.material.roughness = 0.2;
+                    newMaterial = new THREE.MeshStandardMaterial({
+                        color: 0xffd700,
+                        metalness: 1,
+                        roughness: 0.2,
+                    });
                     break;
                 case 'glass':
-                    child.material.color.set(0x99ccff);
-                    child.material.transparent = true;
-                    child.material.opacity = 0.4;
+                    newMaterial = new THREE.MeshPhysicalMaterial({
+                        color: 0x99ccff,
+                        metalness: 0,
+                        roughness: 0,
+                        transmission: 1,
+                        transparent: true,
+                        opacity: 0.4,
+                    });
                     break;
                 case 'chrome':
-                    child.material.color.set(0xcccccc);
-                    child.material.metalness = 1;
-                    child.material.roughness = 0;
+                    newMaterial = new THREE.MeshStandardMaterial({
+                        color: 0xcccccc,
+                        metalness: 1,
+                        roughness: 0,
+                    });
                     break;
                 case 'glow':
-                    child.material.color.set(0xff00ff);
-                    child.material.emissive = new THREE.Color(0xff00ff);
-                    child.material.emissiveIntensity = 1;
+                    newMaterial = new THREE.MeshStandardMaterial({
+                        color: 0xff00ff,
+                        emissive: 0xff00ff,
+                        emissiveIntensity: 1,
+                    });
                     break;
                 case 'realistic':
                 default:
-                    break;
+                    return;
             }
-            child.material.needsUpdate = true;
+
+            child.material.dispose();
+            child.material = newMaterial;
         }
     });
 }
@@ -157,11 +177,6 @@ function onSelect() {
             applyMaterial(model, selectedMaterial);
 
             scene.add(model);
-
-            directionalLight = new THREE.DirectionalLight(lightColor, lightIntensity);
-            directionalLight.position.set(5, 5, 5);
-            directionalLight.visible = lightEnabled;
-            scene.add(directionalLight);
 
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             scene.add(ambientLight);

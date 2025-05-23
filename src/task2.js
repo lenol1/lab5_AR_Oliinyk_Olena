@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { ARButton } from 'three/examples/jsm/webxr/ARButton.js';
 
-// Глобальні змінні
 let scene, camera, renderer, clock;
 let model, mixer;
 let modelLight;
@@ -14,7 +13,6 @@ let modelLightColor = '#ffffff';
 let defaultMaterial, altMaterial;
 let sceneLight;
 
-// Ініціалізація сцени
 init();
 setupUI();
 animate();
@@ -41,7 +39,6 @@ function init() {
     document.body.appendChild(renderer.domElement);
     document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
 
-    // Завантаження моделі
     const loader = new GLTFLoader();
     loader.load(
         'https://universitylpnubucket.s3.eu-north-1.amazonaws.com/scene.gltf',
@@ -100,6 +97,7 @@ function animate() {
 }
 
 function setupUI() {
+     document.getElementById('sceneLightToggle').checked = sceneLight.visible;
     document.getElementById('rotationToggle').addEventListener('change', e => {
         rotate = e.target.checked;
     });
